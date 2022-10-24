@@ -1,12 +1,14 @@
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.*;
 
 import static java.lang.Math.*;
 
-/**
- * The main class consisting of everything
- */
+
 public class Main {
-    final static int INT_MAX = 1000000000; // constant responsible for max value
+    final static int INT_MAX = 1000000000;
 
     static class Cell {
         private int x, y;
@@ -82,6 +84,7 @@ public class Main {
         protected static char[][] map = new char[9][9];
         protected static int scenario;
         protected static Cell jackCell, chestCell, rockCell, tortugaCell, krakenCell, davyCell;
+        protected static boolean isCorrupted = false;
 
 
         protected static Cell[] attackCells;
@@ -97,39 +100,20 @@ public class Main {
             }
         }
 
-//        public void addActor(char name, int x, int y, int perception) {
-//            map[x][y] = name;
-//            if (perception == 2) {
-//                krakenCell = new Cell(x, y);
-//            } else {
-//                davyCell = new Cell(x, y);
-//            }
-//        }
 
         public void addActor(char name, int x, int y) {
-            //fixme
             map[x][y] = name;
             switch (name) {
                 case 'J' -> jackCell = new Cell(x, y);
                 case 'R' -> rockCell = new Cell(x, y);
                 case 'T' -> tortugaCell = new Cell(x, y);
                 case 'C' -> chestCell = new Cell(x, y);
-                case 'K' -> {
-                    krakenCell = new Cell(x, y);
-                    attackCells = new Cell[4];
-                    attackCells[0] = new Cell(x + 1, y + 1);
-                    attackCells[1] = new Cell(x - 1, y + 1);
-                    attackCells[2] = new Cell(x + 1, y - 1);
-                    attackCells[3] = new Cell(x - 1, y - 1);
-                }
+                case 'K' -> krakenCell = new Cell(x, y);
                 case 'D' -> davyCell = new Cell(x, y);
 
             }
         }
 
-        /**
-         * Method to redraw enemies zone after removing cloak
-         */
 
         public static char[][] getMap() {
             return map;
@@ -202,7 +186,7 @@ public class Main {
         public static void setAttackCells(Cell[] attackCells) {
             Map.attackCells = attackCells;
         }
-    } // fixme kraken zone
+    }
 
 
     static class Jack {
@@ -324,12 +308,12 @@ public class Main {
         public void setHasRum(boolean hasRum) {
             this.hasRum = hasRum;
         }
-    } // fixme
+    }
 
 
     static class Path {
-        private ArrayList<Cell> path; // list with coordinates of steps inside path
-        private int size; // size of path
+        private ArrayList<Cell> path;
+        private int size;
 
         public Path() {
             path = new ArrayList<>();
@@ -348,7 +332,7 @@ public class Main {
 
         public void remove(Cell cell) {
             for (int i = 0; i < size; i++) {
-                if(path.get(i).equals(cell)){
+                if (path.get(i).equals(cell)) {
                     path.remove(i);
                     --size;
                     break;
@@ -384,50 +368,49 @@ public class Main {
 
 
     static class Algorithm extends Map {
-        protected Path algoPath; // final path of algorithm
-        protected boolean doesPathExist; // flag to check whether we can build path
-        protected Jack jack; // instance of Harry for each algorithm
+        protected Path answer;
+        protected boolean doesPathExist;
+        protected Jack jack;
 
-        public Algorithm(Jack jack) {
+        public Algorithm() {
             this.doesPathExist = true;
-            this.jack = jack;
-            this.algoPath = new Path();
-            this.algoPath.add(this.jack.initCell); // Path of algorithm starts with init position of harry
+            this.jack = new Jack(getScenario());
+            this.answer = new Path();
+            this.answer.add(this.jack.initCell);
         }
 
         public Path buildPath(Cell currentCell) {
-            if (currentCell == null) { // case when we haven't reached the goal
+            if (currentCell == null) {
                 return null;
             }
-
             Path finalPath = new Path();
             while (currentCell.parent != null) {
                 finalPath.add(currentCell);
-                currentCell = currentCell.parent; // going to initial cell
+                currentCell = currentCell.parent;
 
             }
-            Collections.reverse(finalPath.path); // reversing path
+            Collections.reverse(finalPath.path);
             return finalPath;
         }
 
         public void choosePath(Path[] paths) {
-            Path ansPath = paths[0];
+            Path bestPath = paths[0];
             if (paths[1].getSize() < paths[0].getSize())
-                ansPath = paths[1];
+                bestPath = paths[1];
 
-            if (ansPath.size >= INT_MAX) { // all paths are invalid
+            if (bestPath.size >= INT_MAX) {
                 doesPathExist = false;
             } else {
-                algoPath = ansPath;
+                answer = bestPath;
             }
         }
 
-        public Path getAlgoPath() {
-            return algoPath;
+        public Path getAnswer() {
+            return answer;
         }
 
-        public void setAlgoPath(Path algoPath) {
-            this.algoPath = algoPath;
+        public void setAnswer(Path answer) {
+            this.answer = answer;
         }
 
         public boolean isDoesPathExist() {
@@ -447,35 +430,30 @@ public class Main {
         }
     }
 
-    /**
-     * A-star algorithm that goes to goal with some heuristics
-     */
+
     static class AStar extends Algorithm {
 
-        public AStar(Jack jack) {
-            super(jack);
-            jack = new Jack(Map.getScenario());
-            jack.makeStep(jack.initCell, Map.getScenario()); // harry analyzes his 1st position
-            solve(); // function to solve everything
+        public AStar() {
+            super();
+            jack.makeStep(jack.initCell, getScenario());
+            solve();
         }
 
         public void solve() {
-            // Harry -> Book -> Door
             jack.currentCell = jack.initCell;
             Path[] paths = new Path[2];
 
             paths[0] = reachGoal(jack.currentCell, getTortugaCell());
-            if(paths[0].size != INT_MAX) {// Harry -> Cloak
+            if (paths[0].size != INT_MAX) {
                 jack.currentCell = getTortugaCell();
                 paths[0].addPath(reachGoal(jack.currentCell, getChestCell()));
             }
 
             jack.currentCell = jack.initCell;
             jack = new Jack(getScenario());
-            paths[1] = reachGoal(jack.currentCell, getChestCell()); // Harry -> Book
+            paths[1] = reachGoal(jack.currentCell, getChestCell());
 
-
-           choosePath(paths);
+            choosePath(paths);
         }
 
 
@@ -484,46 +462,34 @@ public class Main {
             Path closedPath = new Path();
             jack.currentCell = initCell;
             jack.currentCell.g = 0;
-            jack.currentCell.h = max(abs(goal.x - jack.currentCell.x), abs(goal.y - jack.currentCell.y));// fixme
-            openPath.add(jack.currentCell); // starting point
+            jack.currentCell.h = max(abs(goal.x - jack.currentCell.x), abs(goal.y - jack.currentCell.y));
+            openPath.add(jack.currentCell);
 
-            // loop until reach goal
-            int ctr = 0; // counter to check infinite loop
             while (openPath.size != 0) {
-                Cell leastCostStep = leastStep(openPath.path);
+                Cell leastCostStep = findCheapestStep(openPath.path);
                 openPath.remove(leastCostStep);
-                closedPath.add(leastCostStep);// Remove step with least stepCost from openPath
+                closedPath.add(leastCostStep);
 
                 if (leastCostStep.equals(goal)) {
                     break;
                 }
-//                if (ctr++ > 5000000) { // case when we lose
-//                    closedPath.setSize(INT_MAX);
-//                    return closedPath;
-//                }
 
-                jack.makeStep(leastCostStep, getScenario()); // Harry makes a step
-                // Generate probableStep's 8(or less) successors
-                ArrayList<Cell> successors = generateSuccessors(leastCostStep, goal);
+                jack.makeStep(leastCostStep, getScenario());
+                ArrayList<Cell> successors = generateNeighbors(leastCostStep, goal);
                 for (Cell successor : successors) {
                     if (closedPath.contains(successor.x, successor.y)) {
-//                        stepCost(leastCostStep, successor, goal, true); // computing f for successor
                         continue;
                     }
-                    if (!openPath.contains(successor.x, successor.y) || successor.g + successor.h < findAndGetF(openPath.path, successor)) {
+                    if (!openPath.contains(successor.x, successor.y) || successor.g + successor.h < findOldF(openPath.path, successor)) {
                         openPath.remove(successor);
                         openPath.add(successor);
                     }
                 }
             }
-            // delete info about parents
-//            for (Cell cur : closedPath.path) {
-//                cur.parent = null;
-//            }
-            if(closedPath.path.get(closedPath.size - 1).equals(goal)) {
+
+            if (closedPath.path.get(closedPath.size - 1).equals(goal)) {
                 return super.buildPath(closedPath.path.get(closedPath.size - 1));
-            }
-            else{
+            } else {
                 Path ans = new Path();
                 ans.size = INT_MAX;
                 return ans;
@@ -531,58 +497,53 @@ public class Main {
         }
 
 
-        public int findAndGetF(ArrayList<Cell> list, Cell cell) {
-            for (Cell tmpCell : list) {
-                if (tmpCell.equals(cell)) {
-                    return tmpCell.g + tmpCell.h;
+        public int findOldF(ArrayList<Cell> list, Cell cell) {
+            for (Cell listCell : list) {
+                if (listCell.equals(cell)) {
+                    return listCell.g + listCell.h;
                 }
             }
-            return -1; // never should happen
+            return -1;
         }
 
-        /**
-         * Method to generate probableStep's 8(or less) successors
-         *
-         * @param father probable step, parent of generated coords
-         * @return list of successors
-         */
-        public ArrayList<Cell> generateSuccessors(Cell father, Cell goal) {
-            ArrayList<Cell> successors = new ArrayList<>();
+
+        public ArrayList<Cell> generateNeighbors(Cell father, Cell goal) {
+            ArrayList<Cell> neighbors = new ArrayList<>();
             for (int i = -1; i <= 1; i++) {
                 for (int j = -1; j <= 1; j++) {
-                    Cell tmpCell = new Cell(father.x + i, father.y + j);
-                    if (tmpCell.isValid() && (i != 0 || j != 0) &&
-                            jack.jackMap[father.x + i][father.y + j] != 'X' && // not take if next cell contains enemy
+                    Cell neighborCell = new Cell(father.x + i, father.y + j);
+                    if (neighborCell.isValid() && (i != 0 || j != 0) &&
+                            jack.jackMap[father.x + i][father.y + j] != 'X' &&
                             jack.jackMap[father.x + i][father.y + j] != 'Y' &&
                             jack.jackMap[father.x + i][father.y + j] != 'K' &&
                             jack.jackMap[father.x + i][father.y + j] != 'D' &&
                             jack.jackMap[father.x + i][father.y + j] != 'R') {
-                        tmpCell.setParent(father);
-                        computeStepCost(tmpCell, goal);
-                        successors.add(tmpCell);
+                        neighborCell.setParent(father);
+                        computeHeuristics(neighborCell, goal);
+                        neighbors.add(neighborCell);
                     }
                 }
             }
-            return successors;
+            return neighbors;
         }
 
 
-        public Cell leastStep(ArrayList<Cell> openPath) {
-            Cell probableStep = new Cell();
-            int probableStepCost = INT_MAX;
+        public Cell findCheapestStep(ArrayList<Cell> openPath) {
+            Cell cheapestStep = new Cell();
+            int cheapestStepCost = INT_MAX;
 
-            for (Cell step : openPath) {
-                if (step.g + step.h < probableStepCost ||
-                        (step.g + step.h == probableStepCost && step.g < probableStep.g)) {
-                    probableStepCost = step.g + step.h;
-                    probableStep = step;
+            for (Cell cell : openPath) {
+                if (cell.g + cell.h < cheapestStepCost ||
+                        (cell.g + cell.h == cheapestStepCost && cell.g < cheapestStep.g)) {
+                    cheapestStepCost = cell.g + cell.h;
+                    cheapestStep = cell;
                 }
             }
-            return probableStep;
+            return cheapestStep;
         }
 
 
-        public void computeStepCost(Cell currentCell, Cell goal) {
+        public void computeHeuristics(Cell currentCell, Cell goal) {
             int g = currentCell.parent.g + 1;
             int h = max(abs(goal.x - currentCell.x), abs(goal.y - currentCell.y));
             currentCell.g = g;
@@ -593,14 +554,15 @@ public class Main {
 
     static class Backtracking extends Algorithm {
         private Cell globalCell;
-        private final boolean[][] isVisited = new boolean[9][9];
         private boolean doesFound;
-        private int minStepNumber = INT_MAX;
-        int rec = 0;
+        private int minStepNumber;
+        private int rec;
 
 
-        public Backtracking(Jack jack) {
-            super(jack);
+        public Backtracking() {
+            super();
+            this.rec = 0;
+            this.minStepNumber = INT_MAX;
             solve();
         }
 
@@ -618,15 +580,15 @@ public class Main {
         public void solve() {
             Path[] paths = new Path[2];
             jack.currentCell = jack.initCell;
-            Path currentPath = new Path();
+            Path currentPath;
             currentPath = cleanData();
 
-            backTrack(jack.currentCell, getTortugaCell(), 0, currentPath); // Book -> Door
+            backTrack(jack.currentCell, getTortugaCell(), 0, currentPath);
             paths[0] = buildPath(globalCell);
             int tortugaMin = minStepNumber;
             jack.currentCell = getTortugaCell();
             currentPath = cleanData();
-            backTrack(jack.currentCell, getChestCell(), 0, currentPath); // Book -> Door
+            backTrack(jack.currentCell, getChestCell(), 0, currentPath);
             Path tmpPath1 = buildPath(globalCell);
             if (paths[0] == null || tmpPath1 == null || paths[0].path.get(0).equals(tmpPath1.path.get(0))) {
                 paths[0] = new Path();
@@ -644,7 +606,7 @@ public class Main {
             rec = 0;
             currentPath = new Path();
             currentPath.add(jack.currentCell);
-            backTrack(jack.currentCell, getChestCell(), 0, currentPath); // Book -> Door
+            backTrack(jack.currentCell, getChestCell(), 0, currentPath);
             paths[1] = buildPath(globalCell);
             if (paths[1] == null || (tmpPath1 != null && paths[1].path.get(0).equals(tmpPath1.path.get(0)))) {
                 paths[1] = new Path();
@@ -654,7 +616,7 @@ public class Main {
         }
 
         public void backTrack(Cell currentCell, Cell goal, int stepNumber, Path currentPath) {
-            jack.makeStep(currentCell, getScenario()); // Harry made a step
+            jack.makeStep(currentCell, getScenario());
             rec++;
 
             if (rec > 5000000 || (doesFound && stepNumber > minStepNumber)
@@ -674,7 +636,7 @@ public class Main {
                 jack.returnBack(currentCell, getScenario());
                 return;
             }
-            ArrayList<Cell> neighbors = getNeighbors(currentCell, goal, currentPath);
+            ArrayList<Cell> neighbors = generateNeighbors(currentCell, goal, currentPath);
 
             for (Cell neighbor : neighbors) {
                 currentPath.add(neighbor);
@@ -685,18 +647,19 @@ public class Main {
         }
 
 
-        public ArrayList<Cell> getNeighbors(Cell currentCell, Cell goal, Path currentPath) {
+        public ArrayList<Cell> generateNeighbors(Cell currentCell, Cell goal, Path currentPath) {
             ArrayList<Cell> neighbors = new ArrayList<>();
+
             for (int i = -1; i <= 1; i++) {
                 for (int j = -1; j <= 1; j++) {
-                    int curX = currentCell.x + i;
-                    int curY = currentCell.y + j;
-                    Cell curNeighbor = new Cell(curX, curY);
-                    if ((i != 0 || j != 0) && curNeighbor.isValid()) {// not counting curStep as neighbor + validation check
-                        if (!currentPath.contains(curX, curY) && jack.jackMap[curX][curY] != 'X' && jack.jackMap[curX][curY] != 'K'
-                                && jack.jackMap[curX][curY] != 'D' && jack.jackMap[curX][curY] != 'Y' && jack.jackMap[curX][curY] != 'R') { // check whether coord is visited before + lose step
+                    int x = currentCell.x + i;
+                    int y = currentCell.y + j;
+                    Cell curNeighbor = new Cell(x, y);
+                    if ((i != 0 || j != 0) && curNeighbor.isValid()) {
+                        if (!currentPath.contains(x, y) && jack.jackMap[x][y] != 'X' && jack.jackMap[x][y] != 'K'
+                                && jack.jackMap[x][y] != 'D' && jack.jackMap[x][y] != 'Y' && jack.jackMap[x][y] != 'R') {
                             curNeighbor.setParent(currentCell);
-                            curNeighbor.h = heuristics(curNeighbor, goal); // counting heuristics of each neighbor
+                            curNeighbor.h = computeHeuristics(curNeighbor, goal);
                             neighbors.add(curNeighbor);
                         }
                     }
@@ -707,77 +670,55 @@ public class Main {
         }
 
 
-        public int heuristics(Cell cell, Cell goal) {
+        public int computeHeuristics(Cell cell, Cell goal) {
             return max(abs(cell.x - goal.x), abs(cell.y - goal.y));
         }
     }
 
-    /**
-     * Class responsible for all output in our program
-     */
+
     static class Output extends Map {
-        /**
-         * Constructor without params
-         */
+
         public Output() {
-            System.out.println("Input successfully entered\n##########  Here is the map:  ##########");
-            outputMap();
+            System.out.println("\nInput successfully entered\n##########  Map  ##########");
+            System.out.println(outputMap('M', new StringBuilder()) + "\n");
         }
 
-        /**
-         * Method to output results/statistics after work of algo
-         *
-         * @param algoName  name of the algorithm
-         * @param outcome   whether we win or lose
-         * @param stepCount number of steps we took
-         * @param path      path we go through
-         * @param time      time algorithm took
-         */
-        public void finalOutput(String algoName, boolean outcome, int stepCount, Path path, long time) {
-            System.out.println("\n\n################  " + algoName + "  ################");
+
+        public void finalOutput(String algorithm, boolean outcome, int stepCount, Path path, long time) {
+            StringBuilder output = new StringBuilder("################  " + algorithm + "  ################\n");
             if (outcome) {
-                System.out.println("We WIN!\nHarry successfully reached the door");
-                System.out.println("Number of steps algorithm took: " + stepCount);
-                drawPath(path);
-                System.out.println("Final path: ");
+                output.append("Win\n");
+                output.append(stepCount).append("\n");
                 for (int i = 0; i < path.path.size(); i++) {
-                    System.out.print("[" + path.path.get(i).x + "," + path.path.get(i).y + "] ");
+                    output.append("[").append(path.path.get(i).x).append(",").append(path.path.get(i).y).append("] ");
                 }
-                System.out.println();
-                System.out.println("Time of algorithm in nanoseconds: " + time);
+                output.append("\n");
+                drawPath(path);
+                output = outputMap('P', output);
+                output.append(time / 1000000).append("ms\n");
+                cleanMap(path);
             } else {
-                System.out.println("Unfortunately we LOSE! T-T");
+                output.append("Lose\n");
             }
-
+            System.out.println(output);
+            fileOutput(output.toString(), algorithm);
         }
 
-        /**
-         * Method to draw stars showing steps we made
-         *
-         * @param path path we made
-         */
+
         public void drawPath(Path path) {
-            System.out.println("######  Here is the map with path  ######");
-            for (int i = 0; i < path.path.size(); i++) { // start from 1 since 1st dot in initial position
+            getMap()[0][0] = '*';
+            for (int i = 0; i < path.path.size(); i++) {
                 int x = path.path.get(i).x;
                 int y = path.path.get(i).y;
-                if (x == 0 && y == 0) {
-                    continue;
-                }
                 getMap()[x][y] = '*';
             }
-            outputMap();
-            cleanMap(path); // clean map after drawing the path
+//            outputMap('P', algorithm);
+//            cleanMap(path);
         }
 
-        /**
-         * After running of one algo we draw there path, so we need to clean the
-         * map for next algo since we have the only map for everything
-         *
-         * @param path path we made before to clean the map
-         */
+
         public void cleanMap(Path path) {
-            for (int i = 1; i < path.path.size(); i++) { // start from 1 since 1st dot in initial position
+            for (int i = 0; i < path.path.size(); i++) {
                 int x = path.path.get(i).x;
                 int y = path.path.get(i).y;
                 getMap()[x][y] = ' ';
@@ -790,74 +731,65 @@ public class Main {
             getMap()[getDavyCell().x][getDavyCell().y] = 'D';
         }
 
-        /**
-         * Method to output map properly
-         */
-        public void outputMap() {
-            System.out.println("#\t#\t#\t#\t#\t#\t#\t#\t#\t#\t#\t");
+
+        public StringBuilder outputMap(char type, StringBuilder output) {
+            output.append("-------------------\n");
+            output.append("  0 1 2 3 4 5 6 7 8\n");
             for (int i = 0; i < 9; i++) {
-                for (int j = -1; j < 10; j++) {
-                    if (j == -1 || j == 9) {
-                        System.out.print("#\t");
+                for (int j = -1; j < 9; j++) {
+                    if (j == -1) {
+                        output.append(i).append(" ");
                     } else {
-                        if (getMap()[i][j] != 'X' && getMap()[i][j] != ' ' && getMap()[i][j] != '*') {
-                            System.out.print(emoji(getMap()[i][j]) + "\t");
-                        } else {
-                            System.out.print(getMap()[i][j] + "\t");
-                        }
+                        if ((type == 'P' && getMap()[i][j] == '*') || (type == 'M' && getMap()[i][j] != ' '))
+                            output.append(getMap()[i][j]).append(" ");
+                        else
+                            output.append("- ");
                     }
                 }
-                System.out.println();
+                output.append("\n");
             }
-            System.out.println("#\t#\t#\t#\t#\t#\t#\t#\t#\t#\t#\t");
+            output.append("-------------------\n");
+            return output;
         }
 
-        /**
-         * Customization of our objects/actors with emojis
-         *
-         * @param symbol char of object/actor
-         * @return emoji in type string
-         */
-        public char emoji(char symbol) {
-//            String ans = switch (symbol) {
-//                case 'J' -> "🐺";
-//                case 'B' -> "\uD83D\uDCD3";
-//                case 'C' -> "\uD83E\uDDE5";
-//                case 'D' -> "\uD83D\uDEAA";
-//                case 'E' -> "\uD83E\uDD81";
-//                default -> Character.toString(symbol);
-//            };
-            return symbol;
+
+        public void fileOutput(String output, String algorithm){
+            if(algorithm.equals("Backtracking")){
+                try(FileWriter writer = new FileWriter("outputBacktracking.txt", false)){
+                    writer.write(output);
+                } catch (IOException ex){
+                    System.out.println(ex.getMessage());
+                }
+            } else if(algorithm.equals("A*")){
+                try(FileWriter writer = new FileWriter("outputAStar.txt", false)){
+                    writer.write(output);
+                } catch (IOException ex){
+                    System.out.println(ex.getMessage());
+                }
+            }
         }
     }
 
-    /**
-     * Class responsible for input in our program
-     */
+
     static class Input extends Map {
-        /**
-         * Default constructor
-         */
+
         public Input() {
         }
 
-        /**
-         * method to start input entering from user
-         */
         public void startInputReading() {
             while (true) {
                 System.out.println("""
-                        Welcome to the 'Book Finding' game.
+                        Welcome to the 'Compass and Pirates' game.
                         If you want to generate the map RANDOMLY, press R
                         If you want to generate the map MANUALLY, press M""");
 
-                Scanner sc = new Scanner(System.in);
-                String generationType = sc.nextLine();
+                Scanner scanner = new Scanner(System.in);
+                String generationType = scanner.nextLine();
                 if (generationType.equals("R")) {
-                    //RandomInput randomInput = new RandomInput();
+                    new RandomInput();
                     break;
                 } else if (generationType.equals("M")) {
-                    ManualInput manualInput = new ManualInput();
+                    new ManualInput();
                     break;
                 } else {
                     System.out.println("Wrong input :( Please, try again");
@@ -865,21 +797,31 @@ public class Main {
             }
         }
 
-        /**
-         * Method to enter scenario with handling all errors
-         */
-        public void enterScenario() {
-            while (true) {
-                Scanner sc = new Scanner(System.in);
-                String tmpScenario;
-                tmpScenario = sc.nextLine();
-                if (tmpScenario.equals("1") || tmpScenario.equals("2")) {
-                    scenario = Integer.parseInt(tmpScenario);
-                    break;
+
+        public void enterScenario(String type) {
+            String tmpScenario = "";
+            if (type.equals("C")) {
+                System.out.println("Enter the scenario: ");
+                Scanner scanner = new Scanner(System.in);
+                tmpScenario = scanner.nextLine();
+            } else {
+                try (FileReader fr = new FileReader("input.txt")) {
+                    BufferedReader reader = new BufferedReader(fr);
+                    tmpScenario = reader.readLine();
+                    tmpScenario = reader.readLine();
+                    reader.close();
+                } catch (IOException ex) {
+                    System.out.println(ex.getMessage());
                 }
-                System.out.println("Wrong input :( Please, try again");
+            }
+            if (tmpScenario.equals("1") || tmpScenario.equals("2"))
+                scenario = Integer.parseInt(tmpScenario);
+            else {
+                System.out.println("Wrong scenario!\n");
+                isCorrupted = true;
             }
         }
+
 
         public void drawKrakenPerception(int x, int y) {
             for (int i = -1; i <= 1; i++) {
@@ -887,7 +829,7 @@ public class Main {
                     if (abs(i + j) == 1) {
                         Cell tmpCell = new Cell(x + i, y + j);
                         if (tmpCell.isValid() && Map.map[x + i][y + j] != 'Y' && Map.map[x + i][y + j] != 'R') {
-                            getMap()[x + i][y + j] = 'X'; // zone
+                            getMap()[x + i][y + j] = 'X';
                         }
                     }
                 }
@@ -899,7 +841,7 @@ public class Main {
                 for (int j = -1; j <= 1; j++) {
                     Cell tmpCell = new Cell(x + i, y + j);
                     if (tmpCell.isValid()) {
-                        getMap()[x + i][y + j] = 'Y'; // zone
+                        getMap()[x + i][y + j] = 'Y';
                     }
                 }
             }
@@ -915,207 +857,206 @@ public class Main {
         }
     }
 
-    /**
-     * Class responsible for random input part
-     */
-//    static class RandomInput extends Input {
-//        /**
-//         * Constructor without params
-//         */
-//        public RandomInput() {
-//            System.out.println("You chose RANDOM world generation\n" +
-//                    "Please, select the scenario");
-//            super.enterScenario();
-//            generateMap();
-//
-//            System.out.println("Harry: [" + getJackCell().y + "," + getJackCell().x + "]");
-//            System.out.println("Filch: [" + getKrakenCell().y + "," + getKrakenCell().x + "]");
-//            System.out.println("Cat: [" + getDavyCell().y + "," + getDavyCell().x + "]");
-//            System.out.println("Book: [" + getRockCell().y + "," + getRockCell().x + "]");
-//            System.out.println("Cloak: [" + getTortugaCell().y + "," + getTortugaCell().x + "]");
-//            System.out.println("Door: [" + getChestCell().y + "," + getChestCell().x + "]");
-//        }
-//
-//        /**
-//         * Method to generate random map without collisions and bugs
-//         */
-//        public void generateMap() {
-//            super.createEmptyMap();
-//            // place Mrs Norris (little enemy) without intersecting with others
-//            super.drawEnemy('K', placeRandEnemy(1));
-//            // place Argus Filch (big Enemy) without intersecting with others
-//            super.drawEnemy('D', placeRandEnemy(1));
-//            super.drawEnemy('R', placeRandEnemy(0));
-//            Random random = new Random();
-//            int x = random.nextInt(9);
-//            int y = random.nextInt(9); // x, y coordinates
-//            super.addActor('C', x, y); // place Cloak in random place
-//            while (getMap()[x][y] != ' ') {
-//                x = random.nextInt(9);
-//                y = random.nextInt(9);
-//            }
-//            super.addActor('B', x, y); // place Book in random place
-//            while (getMap()[x][y] != ' ') {
-//                x = random.nextInt(9);
-//                y = random.nextInt(9);
-//            }
-//            super.addActor('D', x, y); // place Door in random place
-//            while (getMap()[x][y] != ' ') {
-//                x = random.nextInt(9);
-//                y = random.nextInt(9);
-//            }
-//            super.addActor('H', 0, 0); // place Harry at the left bottom
-//        }
-//
-//        /**
-//         * Method to place enemy without intersection
-//         * with objects/actors and perception zone
-//         *
-//         * @param perception size of perception zone
-//         * @return generated coordinate of placed enemy
-//         */
-//        public Cell placeRandEnemy(int perception) {
-//            Random random = new Random();
-//            int x = random.nextInt(9);
-//            int y = random.nextInt(9);
-//            while (x - perception <= 0 && y - perception <= 0) { // generate till enemy stops intersecting with Harry (0;0)
-//                x = random.nextInt(9);
-//                y = random.nextInt(9);
-//            }
-//            return new Cell(x, y);
-//        }
-//    }
 
-    /**
-     * Class responsible for manual input part
-     */
-    static class ManualInput extends Input {
-        /**
-         * Default constructor without parameters
-         */
-        public ManualInput() {
-            System.out.println("""
-                    You chose MANUAL world generation
-                    Please, enter the characters' coordinates (Harry, Argus Filch, Mrs Norris, Book, Invisibility Cloak, Exit) in the form '[x1,y1], [x2, y2], ...'
-                    And select the scenario (1 or 2)""");
+    static class RandomInput extends Input {
+        public RandomInput() {
+            System.out.println("You chose RANDOM world generation\n" +
+                    "Please, select the scenario");
+            super.enterScenario("C");
+            generateMap();
+
+            System.out.println("Harry: [" + getJackCell().y + "," + getJackCell().x + "]");
+            System.out.println("Filch: [" + getKrakenCell().y + "," + getKrakenCell().x + "]");
+            System.out.println("Cat: [" + getDavyCell().y + "," + getDavyCell().x + "]");
+            System.out.println("Book: [" + getRockCell().y + "," + getRockCell().x + "]");
+            System.out.println("Cloak: [" + getTortugaCell().y + "," + getTortugaCell().x + "]");
+            System.out.println("Door: [" + getChestCell().y + "," + getChestCell().x + "]");
+        }
+
+
+        public void generateMap() {
             super.createEmptyMap();
-            enterCoords();
-            super.enterScenario();
+            super.addActor('J', 0, 0);
+
+            super.drawEnemy('D', placeRandEnemy('D'));
+            super.drawEnemy('K', placeRandEnemy('K'));
+            super.drawEnemy('R', placeRandEnemy('R'));
+
+            placeRandObject('T');
+            placeRandObject('C');
         }
 
-        /**
-         * Method to handle manually entered coordinates
-         */
-        public void enterCoords() {
-            ArrayList<Integer> tmpCoords = new ArrayList<>();
-            while (true) {
-                try {
-                    Scanner sc = new Scanner(System.in);
-                    String str = sc.nextLine();
-                    String[] words = str.split(" ");
-                    for (String word : words) {
-                        tmpCoords.add(Integer.parseInt(String.valueOf(word.charAt(1))));
-                        tmpCoords.add(Integer.parseInt(String.valueOf(word.charAt(3))));
-                    }
-                    if (checkCoords(tmpCoords)) {
-                        Cell enemyCoord = new Cell(tmpCoords.get(2), tmpCoords.get(3));
-                        super.drawEnemy('D', enemyCoord); // Place big Enemy on the map
-                        enemyCoord = new Cell(tmpCoords.get(4), tmpCoords.get(5));
-                        super.drawEnemy('K', enemyCoord);
-                        enemyCoord = new Cell(tmpCoords.get(6), tmpCoords.get(7));
-                        super.drawEnemy('R', enemyCoord);// Place small enemy on the map
-                        super.addActor('C', tmpCoords.get(8), tmpCoords.get(9)); // Place Door on the map
-                        super.addActor('T', tmpCoords.get(10), tmpCoords.get(11)); // Place Book on the map
-                        super.addActor('J', tmpCoords.get(0), tmpCoords.get(1)); // Place Harry on the map
+        public void placeRandObject(char name) {
+            Random random = new Random();
+            int x = random.nextInt(9);
+            int y = random.nextInt(9);
+            while (Map.getMap()[x][y] != ' ') {
+                x = random.nextInt(9);
+                y = random.nextInt(9);
+            }
 
-                        break;
-                    } else { // semantically wrong input
-                        System.out.println("Wrong input!\n(coordinates not in 0...8 range " +
-                                "or some actors intersect with each others zones or Harry is not in [0,0])");
-                    }
+            super.addActor(name, x, y);
+        }
 
-                } catch (Exception e) { // syntactically wrong input
-                    System.out.println("Wrong input T-T, please try again");
+        public Cell placeRandEnemy(char enemy) {
+            Random random = new Random();
+            int x = random.nextInt(9);
+            int y = random.nextInt(9);
+            if (enemy == 'D') {
+                while (x - 1 <= 0 && y - 1 <= 0) {
+                    x = random.nextInt(9);
+                    y = random.nextInt(9);
                 }
-            }
-        }
-
-        /**
-         * fixme
-         * Method to check whether we have prohibited intersections
-         *
-         * @param coords list of coordinates of objects/actors
-         * @return TRUE if no intersections and FALSE otherwise
-         */
-        public boolean checkCoords(ArrayList<Integer> coords) {
-            if ((coords.get(6).equals(coords.get(10)) && coords.get(7).equals(coords.get(11))) || // B != E
-                    (coords.get(0) != 0 || coords.get(1) != 0)) { // Harry is not in [0,0]
-                return false;
-            }
-            return checkEnemy(coords.get(2), coords.get(3), 2) && // check E
-                    checkEnemy(coords.get(4), coords.get(5), 2); // check e
-        }
-
-        /**
-         * Method to check whether we have something prohibited in our perception zone
-         *
-         * @param x          X-coordinate
-         * @param y          Y-coordinate
-         * @param perception perception zone size
-         * @return TRUE is nothing prohibited in perception zone and FALSE otherwise
-         */
-        public boolean checkEnemy(int x, int y, int perception) {
-            for (int i = -perception; i <= perception; i++) {
-                for (int j = -perception; j <= perception; j++) {
-                    Cell tmpCoord = new Cell(x + i, y + j);
-                    if (tmpCoord.isValid() && // check out of bound error
-                            (getMap()[x + i][y + j] != ' ' && getMap()[x + i][y + j] != 'X'
-                                    && getMap()[x + i][y + j] != 'E' && getMap()[x + i][y + j] != 'D')) {
-                        return false; // something in perception zone
-                    }
+            } else if (enemy == 'K') {
+                while ((x == 0 && y == 0) || (x == 1 && y == 0) || (x == 0 && y == 1) || (x == davyCell.getX() && y == davyCell.getY())) {
+                    x = random.nextInt(9);
+                    y = random.nextInt(9);
                 }
-            }
-            return true;
+            } else if (enemy == 'R')
+                while ((x == 0 && y == 0) || (x == davyCell.getX() && y == davyCell.getY())) {
+                    x = random.nextInt(9);
+                    y = random.nextInt(9);
+                }
+            return new Cell(x, y);
         }
     }
 
-    /**
-     * Class that calls all methods above to input/solve/output our task with
-     */
+
+    static class ManualInput extends Input {
+
+        public ManualInput() {
+            String type;
+
+            while (true) {
+                System.out.println("""
+                        You chose MANUAL world generation
+                        If you want to generate the map from CONSOLE, press C
+                        If you want to generate the map from FILE, press F""");
+
+                Scanner scanner = new Scanner(System.in);
+                String source = scanner.nextLine();
+                if (source.equals("C")) {
+                    type = source;
+                    System.out.println("""
+                            You chose MANUAL world generation from CONSOLE
+                            Input coordinates of all object:""");
+                    break;
+                } else if (source.equals("F")) {
+                    type = source;
+                    System.out.println("You chose MANUAL world generation from FILE");
+                    break;
+                } else {
+                    System.out.println("Wrong source name :( Please, try again");
+                }
+            }
+
+            super.createEmptyMap();
+            enterCoords(type);
+            if (!isCorrupted) {
+                super.enterScenario(type);
+            }
+        }
+
+
+        public void enterCoords(String type) {
+            ArrayList<Integer> tmpCoords = new ArrayList<>();
+            try {
+                String inputString;
+                if (type.equals("C")) {
+                    Scanner scanner = new Scanner(System.in);
+                    inputString = scanner.nextLine();
+                } else {
+                    FileReader fr = new FileReader("input.txt");
+                    BufferedReader reader = new BufferedReader(fr);
+                    inputString = reader.readLine();
+                    fr.close();
+                    reader.close();
+                }
+
+                String[] words = inputString.split(" ");
+                for (String word : words) {
+                    tmpCoords.add(Integer.parseInt(String.valueOf(word.charAt(1))));
+                    tmpCoords.add(Integer.parseInt(String.valueOf(word.charAt(3))));
+                }
+
+                checkObject('J', tmpCoords.get(0), tmpCoords.get(1));
+                if (!isCorrupted) checkEnemy('D', tmpCoords.get(2), tmpCoords.get(3));
+                if (!isCorrupted) checkEnemy('K', tmpCoords.get(4), tmpCoords.get(5));
+                if (!isCorrupted) checkEnemy('R', tmpCoords.get(6), tmpCoords.get(7));
+                if (!isCorrupted) checkObject('C', tmpCoords.get(8), tmpCoords.get(9));
+                if (!isCorrupted) checkObject('T', tmpCoords.get(10), tmpCoords.get(11));
+            } catch (Exception e) {
+                isCorrupted = true;
+                System.out.println("Wrong input style!");
+            }
+        }
+
+
+        public void checkObject(char name, int x, int y) {
+            if (!isValid(x, y) || Map.getMap()[x][y] != ' ' || (name == 'J' && (x != 0 || y != 0))) {
+                invalidCoords();
+                return;
+            }
+
+            super.addActor(name, x, y);
+        }
+
+        public void checkEnemy(char enemy, int x, int y) {
+            if (enemy == 'D') {
+                if (!isValid(x, y) || (x - 1 <= 0 && y - 1 <= 0)) {
+                    invalidCoords();
+                    return;
+                }
+            } else if (enemy == 'K') {
+                if (!isValid(x, y) || (x == 0 && y == 0) || (x == 1 && y == 0) || (x == 0 && y == 1) || (x == davyCell.getX() && y == davyCell.getY())) {
+                    invalidCoords();
+                    return;
+                }
+            } else if (enemy == 'R')
+                if (!isValid(x, y) || (x == 0 && y == 0) || (x == davyCell.getX() && y == davyCell.getY())) {
+                    invalidCoords();
+                    return;
+                }
+            drawEnemy(enemy, new Cell(x, y));
+        }
+
+        public boolean isValid(int x, int y) {
+            return (x >= 0 && x <= 8) && (y >= 0 && y <= 8);
+        }
+
+        public void invalidCoords() {
+            isCorrupted = true;
+            System.out.println("Wrong input!\n(coordinates not in 0...8 range " +
+                    "or some actors intersect with each others zones)");
+        }
+    }
+
+
     static class Solution {
-        /**
-         * Constructor where everything is made
-         */
+
         public Solution() {
-            // Input
+
             Input input = new Input();
             input.startInputReading();
+            if (!Map.isCorrupted) {
 
-            // Initial Output
-            Output output = new Output();
-            // Algorithms
-            // BackTracking
-            Jack jack = new Jack(Map.scenario);
-            long startTime1 = System.nanoTime();
-            Backtracking backtracking = new Backtracking(jack);
-            long endTime1 = System.nanoTime();
-            output.finalOutput("Backtracking", backtracking.doesPathExist,
-                    backtracking.algoPath.path.size(), backtracking.algoPath, endTime1 - startTime1);
-            if (jack.hasRum) { // redraw perception zones of enemies
-//                Map.addKrakenZone();
-                jack.setHasRum(false);
+                Output output = new Output();
+
+                long startTime1 = System.nanoTime();
+                Backtracking backtracking = new Backtracking();
+                long endTime1 = System.nanoTime();
+                output.finalOutput("Backtracking", backtracking.doesPathExist,
+                        backtracking.answer.path.size(), backtracking.answer, endTime1 - startTime1);
+
+                long startTime2 = System.nanoTime();
+                AStar aStar = new AStar();
+                long endTime2 = System.nanoTime();
+                output.finalOutput("A*", aStar.doesPathExist, aStar.answer.path.size(), aStar.answer, endTime2 - startTime2);
             }
-            // A*
-            Jack jack2 = new Jack(Map.scenario);
-            jack2.currentCell = jack2.initCell; // place harry at the beginning to run another algorithm
-            long startTime2 = System.nanoTime();
-            AStar aStar = new AStar(jack2);
-            long endTime2 = System.nanoTime();
-            output.finalOutput("A*", aStar.doesPathExist, aStar.algoPath.path.size(), aStar.algoPath, endTime2 - startTime2);
         }
     }
 
     public static void main(String[] args) {
-        Solution solution = new Solution(); // making instance of class that does everything
+        new Solution();
     }
 }
