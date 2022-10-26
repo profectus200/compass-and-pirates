@@ -7,7 +7,7 @@ import java.util.*;
 import static java.lang.Math.*;
 
 /**
- * Class which contains everything.
+ * Class which runs the solution.
  */
 public class Main {
     public static void main(String[] args) {
@@ -22,7 +22,6 @@ class Cell {
     final static Integer INT_MAX = 1000000000;
     private Integer x, y, g, h;
     private Cell previous;
-
     private boolean isKrakenKilled, hasRum;
 
     /**
@@ -71,7 +70,7 @@ class Cell {
     }
 
     /**
-     * Returns for x field.
+     * Returns x field.
      *
      * @return value of x field
      */
@@ -80,16 +79,16 @@ class Cell {
     }
 
     /**
-     * Sets for x field.
+     * Sets x field.
      *
-     * @param x field
+     * @param x value
      */
     public void setX(Integer x) {
         this.x = x;
     }
 
     /**
-     * Returns for y field.
+     * Returns y field.
      *
      * @return value of y field
      */
@@ -98,16 +97,16 @@ class Cell {
     }
 
     /**
-     * Sets for y field.
+     * Sets y field.
      *
-     * @param y field
+     * @param y value
      */
     public void setY(Integer y) {
         this.y = y;
     }
 
     /**
-     * Returns for parent field.
+     * Returns previous field.
      *
      * @return value of parent field
      */
@@ -116,16 +115,16 @@ class Cell {
     }
 
     /**
-     * Sets for parent field.
+     * Sets previous field.
      *
-     * @param previous field
+     * @param previous value
      */
     public void setPrevious(Cell previous) {
         this.previous = previous;
     }
 
     /**
-     * Returns for g field.
+     * Returns g field.
      *
      * @return value of g field
      */
@@ -134,16 +133,16 @@ class Cell {
     }
 
     /**
-     * Sets for g field.
+     * Sets g field.
      *
-     * @param g field
+     * @param g value
      */
     public void setG(Integer g) {
         this.g = g;
     }
 
     /**
-     * Returns for h field.
+     * Returns h field.
      *
      * @return value of h field
      */
@@ -152,39 +151,59 @@ class Cell {
     }
 
     /**
-     * Sets for h field.
+     * Sets h field.
      *
-     * @param h field
+     * @param h value
      */
     public void setH(Integer h) {
         this.h = h;
     }
 
+    /**
+     * Returns isKrakenKilled field.
+     *
+     * @return value of isKrakenKilled field
+     */
     public boolean isKrakenKilled() {
         return isKrakenKilled;
     }
 
+    /**
+     * Sets isKrakenKilled field.
+     *
+     * @param krakenKilled value
+     */
     public void setKrakenKilled(boolean krakenKilled) {
         isKrakenKilled = krakenKilled;
     }
 
+    /**
+     * Returns hasRum field.
+     *
+     * @return value of hasRum field
+     */
     public boolean isHasRum() {
         return hasRum;
     }
 
+    /**
+     * Sets hasRum field.
+     *
+     * @param hasRum value
+     */
     public void setHasRum(boolean hasRum) {
         this.hasRum = hasRum;
     }
 
 }
 
-
+/**
+ * Class which represents the game map.
+ */
 class Map {
     private static Character[][] map = new Character[9][9];
     private static Integer scenario;
     private static Cell jackCell, chestCell, rockCell, tortugaCell, krakenCell, davyCell;
-
-
     protected static boolean isCorrupted = false;
 
     /**
@@ -220,10 +239,56 @@ class Map {
             case 'C' -> chestCell = new Cell(x, y);
             case 'K' -> krakenCell = new Cell(x, y);
             case 'D' -> davyCell = new Cell(x, y);
-
         }
     }
 
+    /**
+     * Draws kraken perception on the map.
+     *
+     * @param x coordinate
+     * @param y coordinate
+     */
+    public static void drawKrakenPerception(int x, int y) {
+        for (int i = -1; i < 2; ++i) {
+            for (int j = -1; j < 2; ++j) {
+                if (abs(i + j) == 1) {
+                    Cell neighborCell = new Cell(x + i, y + j);
+                    if (neighborCell.isValid() && Map.getMap()[x + i][y + j] != 'Y' && Map.getMap()[x + i][y + j] != 'R')
+                        Map.getMap()[x + i][y + j] = 'X';
+                }
+            }
+        }
+    }
+
+    /**
+     * Draws Davy perception on the map.
+     *
+     * @param x coordinate
+     * @param y coordinate
+     */
+    public static void drawDavyPerception(int x, int y) {
+        for (int i = -1; i < 2; ++i) {
+            for (int j = -1; j < 2; ++j) {
+                Cell neighborCell = new Cell(x + i, y + j);
+                if (neighborCell.isValid()) Map.getMap()[x + i][y + j] = 'Y';
+            }
+        }
+    }
+
+    /**
+     * Draws enemy on the map.
+     *
+     * @param name enemy's name
+     * @param cell enemy's cell
+     */
+    public static void drawEnemy(char name, Cell cell) {
+        int x = cell.getX(), y = cell.getY();
+        if (name == 'K')
+            drawKrakenPerception(x, y);
+        else if (name == 'D')
+            drawDavyPerception(x, y);
+        Map.addObject(name, x, y);
+    }
 
     /**
      * Returns map field.
@@ -237,7 +302,7 @@ class Map {
     /**
      * Sets map field.
      *
-     * @param map field
+     * @param map value
      */
     public static void setMap(Character[][] map) {
         Map.map = map;
@@ -255,7 +320,7 @@ class Map {
     /**
      * Sets scenario field.
      *
-     * @param scenario field
+     * @param scenario value
      */
     public static void setScenario(Integer scenario) {
         Map.scenario = scenario;
@@ -273,7 +338,7 @@ class Map {
     /**
      * Sets jackCell field.
      *
-     * @param jackCell field
+     * @param jackCell value
      */
     public static void setJackCell(Cell jackCell) {
         Map.jackCell = jackCell;
@@ -291,7 +356,7 @@ class Map {
     /**
      * Sets chestCell field.
      *
-     * @param chestCell field
+     * @param chestCell value
      */
     public static void setChestCell(Cell chestCell) {
         Map.chestCell = chestCell;
@@ -309,7 +374,7 @@ class Map {
     /**
      * Sets rockCell field.
      *
-     * @param rockCell field
+     * @param rockCell value
      */
     public static void setRockCell(Cell rockCell) {
         Map.rockCell = rockCell;
@@ -327,7 +392,7 @@ class Map {
     /**
      * Sets tortugaCell field.
      *
-     * @param tortugaCell field
+     * @param tortugaCell value
      */
     public static void setTortugaCell(Cell tortugaCell) {
         Map.tortugaCell = tortugaCell;
@@ -345,7 +410,7 @@ class Map {
     /**
      * Sets krakenCell field.
      *
-     * @param krakenCell field
+     * @param krakenCell value
      */
     public static void setKrakenCell(Cell krakenCell) {
         Map.krakenCell = krakenCell;
@@ -363,16 +428,26 @@ class Map {
     /**
      * Sets davyCell field.
      *
-     * @param davyCell field
+     * @param davyCell value
      */
     public static void setDavyCell(Cell davyCell) {
         Map.davyCell = davyCell;
     }
 
+    /**
+     * Returns isCorrupted field.
+     *
+     * @return isCorrupted value
+     */
     public static boolean getIsCorrupted() {
         return isCorrupted;
     }
 
+    /**
+     * Sets isCorrupted field.
+     *
+     * @param isCorrupted value
+     */
     public static void setIsCorrupted(boolean isCorrupted) {
         Map.isCorrupted = isCorrupted;
     }
@@ -382,10 +457,8 @@ class Map {
  * Represents Jack Sparrow.
  */
 class Jack {
-    private Cell initCell, currentCell, krakenKillCell;
-    private Boolean hasRum;
-    private Boolean isKrakenKilled;
-    private final Character[][] jackMap;
+    private Cell initCell, currentCell;
+    private char[][] jackMap;
 
     /**
      * Constructor for the Jack class.
@@ -393,18 +466,18 @@ class Jack {
      * @param scenario of Jack's perception
      */
     public Jack(int scenario) {
-        this.jackMap = new Character[9][9];
         this.initCell = Map.getJackCell();
         this.initCell.setG(0);
         this.currentCell = initCell;
-        this.krakenKillCell = new Cell(-1, -1);
-        this.hasRum = false;
-        this.isKrakenKilled = false;
-        makeStep(initCell, scenario);
         createEmptyMap();
+        makeStep(initCell, scenario);
     }
 
+    /**
+     * Creates empty Jack's map.
+     */
     public void createEmptyMap() {
+        jackMap = new char[9][9];
         for (int i = 0; i < 9; ++i) {
             for (int j = 0; j < 9; ++j) jackMap[i][j] = ' ';
         }
@@ -418,14 +491,21 @@ class Jack {
      */
     public void makeStep(Cell cell, int scenario) {
         currentCell = cell;
-        if (currentCell.equals(Map.getTortugaCell())) hasRum = true;
-        if (hasRum && !isKrakenKilled) {
+        cell.setHasRum(cell.getPrevious() != null && cell.getPrevious().isHasRum());
+        if (cell.getPrevious() != null && cell.getPrevious().isKrakenKilled()) {
+            cell.setKrakenKilled(true);
+            removeKrakenZone();
+        } else {
+            cell.setKrakenKilled(false);
+            addKrakenZone();
+        }
+        if (currentCell.equals(Map.getTortugaCell())) cell.setHasRum(true);
+        if (cell.isHasRum() && !cell.isKrakenKilled()) {
             for (int i = -1; i < 2; ++i) {
                 for (int j = -1; j < 2; ++j) {
                     if (abs(i) == 1 && abs(j) == 1 && (currentCell.getX().equals(Map.getKrakenCell().getX() + i)) && (currentCell.getY().equals(Map.getKrakenCell().getY() + j))) {
                         removeKrakenZone();
-                        isKrakenKilled = true;
-                        krakenKillCell = currentCell;
+                        cell.setKrakenKilled(true);
                     }
                 }
             }
@@ -437,7 +517,7 @@ class Jack {
                         (scenario == 2 && (abs(i) > 1 || abs(j) > 1) && (abs(i) + abs(j) > 2))) continue;
                 Cell tmpCell = new Cell(x + i, y + j);
                 if (tmpCell.isValid() &&
-                        ((!isKrakenKilled && (Map.getMap()[x + i][y + j].equals('X') || Map.getMap()[x + i][y + j].equals('K')))
+                        ((!cell.isKrakenKilled() && (Map.getMap()[x + i][y + j].equals('X') || Map.getMap()[x + i][y + j].equals('K')))
                                 || Map.getMap()[x + i][y + j].equals('Y') || Map.getMap()[x + i][y + j].equals('D')
                                 || Map.getMap()[x + i][y + j].equals('R'))) {
                     jackMap[x + i][y + j] = Map.getMap()[x + i][y + j];
@@ -447,36 +527,17 @@ class Jack {
     }
 
     /**
-     * Returns from the given cell.
-     *
-     * @param cell     from which Jack returns
-     * @param scenario of Jack's perception
-     */
-    public void returnBack(Cell cell, int scenario) {
-        if (krakenKillCell.equals(cell)) {
-            addKrakenZone();
-            isKrakenKilled = false;
-            krakenKillCell = new Cell(-1, -1);
-        }
-        if (cell.equals(Map.getTortugaCell())) {
-            hasRum = false;
-        }
-        currentCell = cell.getPrevious();
-    }
-
-    /**
      * Removes kraken zone form Jack's map.
      */
     public void removeKrakenZone() {
         for (int i = 0; i < 9; i++) {
             for (int j = 0; j < 9; j++) {
-                if (jackMap[i][j].equals('X') || jackMap[i][j].equals('K')) {
+                if (jackMap[i][j] == 'X' || jackMap[i][j] == 'K') {
                     jackMap[i][j] = 'M';
                 }
             }
         }
     }
-
 
     /**
      * Adds kraken zone on Jack's map.
@@ -484,7 +545,7 @@ class Jack {
     public void addKrakenZone() {
         for (int i = 0; i <= 8; ++i) {
             for (int j = 0; j <= 8; ++j) {
-                if (jackMap[i][j].equals('M')) {
+                if (jackMap[i][j] == 'M') {
                     jackMap[i][j] = Map.getMap()[i][j];
                 }
             }
@@ -496,7 +557,7 @@ class Jack {
      *
      * @return jackMap field
      */
-    public Character[][] getJackMap() {
+    public char[][] getJackMap() {
         return jackMap;
     }
 
@@ -536,31 +597,6 @@ class Jack {
         this.currentCell = currentCell;
     }
 
-    /**
-     * Returns hasRum field.
-     *
-     * @return hasRum field
-     */
-    public Boolean getHasRum() {
-        return hasRum;
-    }
-
-    /**
-     * Sets hasRum field.
-     *
-     * @param hasRum field
-     */
-    public void setHasRum(boolean hasRum) {
-        this.hasRum = hasRum;
-    }
-
-    public Boolean getKrakenKilled() {
-        return isKrakenKilled;
-    }
-
-    public void setKrakenKilled(Boolean krakenKilled) {
-        isKrakenKilled = krakenKilled;
-    }
 }
 
 /**
@@ -886,11 +922,11 @@ class AStar extends Algorithm {
             for (int j = -1; j < 2; ++j) {
                 Cell neighborCell = new Cell(cell.getX() + i, cell.getY() + j);
                 if (neighborCell.isValid() && (i != 0 || j != 0) &&
-                        !jack.getJackMap()[cell.getX() + i][cell.getY() + j].equals('X') &&
-                        !jack.getJackMap()[cell.getX() + i][cell.getY() + j].equals('Y') &&
-                        !jack.getJackMap()[cell.getX() + i][cell.getY() + j].equals('K') &&
-                        !jack.getJackMap()[cell.getX() + i][cell.getY() + j].equals('D') &&
-                        !jack.getJackMap()[cell.getX() + i][cell.getY() + j].equals('R')) {
+                        !(jack.getJackMap()[cell.getX() + i][cell.getY() + j] == 'X') &&
+                        !(jack.getJackMap()[cell.getX() + i][cell.getY() + j] == 'Y') &&
+                        !(jack.getJackMap()[cell.getX() + i][cell.getY() + j] == 'K') &&
+                        !(jack.getJackMap()[cell.getX() + i][cell.getY() + j] == 'D') &&
+                        !(jack.getJackMap()[cell.getX() + i][cell.getY() + j] == 'R')) {
                     neighborCell.setPrevious(cell);
                     computeHeuristics(neighborCell, goal);
                     neighbors.add(neighborCell);
@@ -953,7 +989,7 @@ class Backtracking extends Algorithm {
         solve();
     }
 
-    public void updateMinDistance(){
+    public void updateMinDistance() {
         minDistance = new Integer[9][9];
         for (int i = 0; i < 9; i++) {
             for (int j = 0; j < 9; j++) {
@@ -989,6 +1025,8 @@ class Backtracking extends Algorithm {
         reachGoal(jack.getCurrentCell(), Map.getTortugaCell(), 0, currentPath);
         paths[0] = buildPath(globalCell);
         int tortugaMin = minStepNumber;
+
+        jack = new Jack(Map.getScenario());
         jack.setCurrentCell(Map.getTortugaCell());
         currentPath = cleanData();
         reachGoal(jack.getCurrentCell(), Map.getChestCell(), 0, currentPath);
@@ -1030,18 +1068,16 @@ class Backtracking extends Algorithm {
     public void reachGoal(Cell currentCell, Cell goal, int stepNumber, Path currentPath) {
         jack.makeStep(currentCell, Map.getScenario());
 
-        if(stepNumber > minDistance[currentCell.getX()][currentCell.getY()]){
-            jack.returnBack(currentCell, Map.getScenario());
+        if (stepNumber > minDistance[currentCell.getX()][currentCell.getY()]) {
             return;
-        } else{
+        } else {
             minDistance[currentCell.getX()][currentCell.getY()] = stepNumber;
         }
 
         if ((doesFound && stepNumber > minStepNumber)
-                || (!jack.getKrakenKilled() && (Map.getMap()[currentCell.getX()][currentCell.getY()] == 'X' || Map.getMap()[currentCell.getX()][currentCell.getY()] == 'K'))
+                || (!currentCell.isKrakenKilled() && (Map.getMap()[currentCell.getX()][currentCell.getY()] == 'X' || Map.getMap()[currentCell.getX()][currentCell.getY()] == 'K'))
                 || Map.getMap()[currentCell.getX()][currentCell.getY()] == 'Y' || Map.getMap()[currentCell.getX()][currentCell.getY()] == 'D'
                 || Map.getMap()[currentCell.getX()][currentCell.getY()] == 'R') {
-            jack.returnBack(currentCell, Map.getScenario());
             return;
         }
 
@@ -1051,7 +1087,6 @@ class Backtracking extends Algorithm {
                 doesFound = true;
                 minStepNumber = stepNumber;
             }
-            jack.returnBack(currentCell, Map.getScenario());
             return;
         }
         ArrayList<Cell> neighbors = generateNeighbors(currentCell, goal, currentPath);
@@ -1061,7 +1096,6 @@ class Backtracking extends Algorithm {
             reachGoal(neighbor, goal, stepNumber + 1, currentPath);
             currentPath.remove(neighbor);
         }
-        jack.returnBack(currentCell, Map.getScenario());
     }
 
     /**
@@ -1133,6 +1167,7 @@ class Output {
         if (isFound) {
             output.append("Win\n");
             output.append(path.getPath().size()).append("\n");
+            output.append("[0,0] ");
             for (int i = 0; i < path.getPath().size(); i++) {
                 output.append("[").append(path.getPath().get(i).getX()).append(",").append(path.getPath().get(i).getY()).append("] ");
             }
@@ -1178,6 +1213,8 @@ class Output {
         Map.getMap()[Map.getChestCell().getX()][Map.getChestCell().getY()] = 'C';
         Map.getMap()[Map.getKrakenCell().getX()][Map.getKrakenCell().getY()] = 'K';
         Map.getMap()[Map.getDavyCell().getX()][Map.getDavyCell().getY()] = 'D';
+        Map.drawDavyPerception(Map.getDavyCell().getX(), Map.getDavyCell().getY());
+        Map.drawKrakenPerception(Map.getKrakenCell().getX(), Map.getKrakenCell().getY());
     }
 
     /**
@@ -1242,6 +1279,9 @@ class Input {
     }
 
 
+    /**
+     * Starts input reading.
+     */
     public void startInputReading() {
         while (true) {
             System.out.println("""
@@ -1264,6 +1304,11 @@ class Input {
     }
 
 
+    /**
+     * Enters the scenario.
+     *
+     * @param type console or file
+     */
     public void enterScenario(String type) {
         String input = "";
         if (type.equals("C")) {
@@ -1287,41 +1332,16 @@ class Input {
             Map.setIsCorrupted(true);
         }
     }
-
-
-    public void drawKrakenPerception(int x, int y) {
-        for (int i = -1; i < 2; ++i) {
-            for (int j = -1; j < 2; ++j) {
-                if (abs(i + j) == 1) {
-                    Cell neighborCell = new Cell(x + i, y + j);
-                    if (neighborCell.isValid() && Map.getMap()[x + i][y + j] != 'Y' && Map.getMap()[x + i][y + j] != 'R')
-                        Map.getMap()[x + i][y + j] = 'X';
-                }
-            }
-        }
-    }
-
-    public void drawDavyPerception(int x, int y) {
-        for (int i = -1; i < 2; ++i) {
-            for (int j = -1; j < 2; ++j) {
-                Cell neighborCell = new Cell(x + i, y + j);
-                if (neighborCell.isValid()) Map.getMap()[x + i][y + j] = 'Y';
-            }
-        }
-    }
-
-    public void drawEnemy(char name, Cell cell) {
-        int x = cell.getX(), y = cell.getY();
-        if (name == 'K')
-            drawKrakenPerception(x, y);
-        else if (name == 'D')
-            drawDavyPerception(x, y);
-        Map.addObject(name, x, y);
-    }
 }
 
-
+/**
+ * Class which represents random input.
+ */
 class RandomInput extends Input {
+
+    /**
+     * Constructor for the RandomInput class.
+     */
     public RandomInput() {
         System.out.println("You chose RANDOM world generation\n" +
                 "Please, select the scenario");
@@ -1336,19 +1356,26 @@ class RandomInput extends Input {
         System.out.println("Tortuga: [" + Map.getTortugaCell().getX() + "," + Map.getTortugaCell().getY() + "]");
     }
 
-
+    /**
+     * Generates map.
+     */
     public void generateMap() {
         Map.createEmptyMap();
         Map.addObject('J', 0, 0);
 
-        super.drawEnemy('D', placeRandEnemy('D'));
-        super.drawEnemy('K', placeRandEnemy('K'));
-        super.drawEnemy('R', placeRandEnemy('R'));
+        Map.drawEnemy('D', placeRandEnemy('D'));
+        Map.drawEnemy('K', placeRandEnemy('K'));
+        Map.drawEnemy('R', placeRandEnemy('R'));
 
         placeRandObject('T');
         placeRandObject('C');
     }
 
+    /**
+     * Places random object on the map.
+     *
+     * @param name object's name
+     */
     public void placeRandObject(char name) {
         Random random = new Random();
         int x = random.nextInt(9), y = random.nextInt(9);
@@ -1360,6 +1387,12 @@ class RandomInput extends Input {
         Map.addObject(name, x, y);
     }
 
+    /**
+     * Places random enemy on the map.
+     *
+     * @param enemy enemy's name
+     * @return enemy's cell
+     */
     public Cell placeRandEnemy(char enemy) {
         Random random = new Random();
         int x = random.nextInt(9), y = random.nextInt(9);
@@ -1382,9 +1415,14 @@ class RandomInput extends Input {
     }
 }
 
-
+/**
+ * Class which represents manual input.
+ */
 class ManualInput extends Input {
 
+    /**
+     * Constructor for ManualInput.
+     */
     public ManualInput() {
         String type;
 
@@ -1418,7 +1456,11 @@ class ManualInput extends Input {
         }
     }
 
-
+    /**
+     * Enters object coords.
+     *
+     * @param type file or console
+     */
     public void enterCoords(String type) {
         ArrayList<Integer> objectsCoordinates = new ArrayList<>();
         try {
@@ -1452,9 +1494,15 @@ class ManualInput extends Input {
         }
     }
 
-
+    /**
+     * Checks object validness.
+     *
+     * @param name enemy's name
+     * @param x    coordinate
+     * @param y    coordinate
+     */
     public void checkObject(char name, int x, int y) {
-        if (!isValid(x, y) || Map.getMap()[x][y] != ' ' || (name == 'J' && (x != 0 || y != 0))) {
+        if (!isValid(x, y) || (Map.getMap()[x][y] != ' ' && !(x == 0 || y == 0)) || (name == 'J' && (x != 0 || y != 0))) {
             invalidCoords();
             return;
         }
@@ -1462,6 +1510,13 @@ class ManualInput extends Input {
         Map.addObject(name, x, y);
     }
 
+    /**
+     * Checks enemy's validness.
+     *
+     * @param enemy enemy's name
+     * @param x     coordinate
+     * @param y     coordinate
+     */
     public void checkEnemy(char enemy, int x, int y) {
         if (enemy == 'D') {
             if (!isValid(x, y) || (x - 1 <= 0 && y - 1 <= 0)) {
@@ -1478,13 +1533,23 @@ class ManualInput extends Input {
                 invalidCoords();
                 return;
             }
-        drawEnemy(enemy, new Cell(x, y));
+        Map.drawEnemy(enemy, new Cell(x, y));
     }
 
+    /**
+     * Checks validness of coordinates.
+     *
+     * @param x coordinate
+     * @param y coordinate
+     * @return true if coords are valid and false otherwise
+     */
     public boolean isValid(int x, int y) {
         return (x >= 0 && x <= 8) && (y >= 0 && y <= 8);
     }
 
+    /**
+     * Runs when coords are invalid
+     */
     public void invalidCoords() {
         Map.setIsCorrupted(true);
         System.out.println("Wrong input!\n(coordinates not in 0...8 range " +
@@ -1492,11 +1557,15 @@ class ManualInput extends Input {
     }
 }
 
-
+/**
+ * Class which represents the solution.
+ */
 class Solution {
 
+    /**
+     * Method which solves everything.
+     */
     public Solution() {
-
         Input input = new Input();
         input.startInputReading();
         if (!Map.isCorrupted) {
